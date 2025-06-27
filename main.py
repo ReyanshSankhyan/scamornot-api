@@ -7,6 +7,7 @@ import io
 from PIL import Image
 import requests
 from bs4 import BeautifulSoup
+import re
 
 # Load environment variables from .env file
 load_dotenv()
@@ -145,28 +146,25 @@ async def check_url_malicious_intent(url: str):
         malicious_score = 0
         reasoning = "N/A"
 
-        if "MaliciousScore:" in text_response and "Reasoning:" in text_response:
-            parts = text_response.split("Reasoning:", 1)
-            malicious_score_part = parts[0].replace("MaliciousScore:", "").strip()
-            reasoning_part = parts[1].strip()
+        # First try to find both score and reasoning in standard format
+        score_match = re.search(r'MaliciousScore:\s*(\d+)', text_response)
+        reasoning_match = re.search(r'Reasoning:\s*(.*)', text_response, re.DOTALL)
+        
+        if score_match:
             try:
-                malicious_score = int(malicious_score_part)
-            except ValueError:
-                pass # Keep default 0 if parsing fails
-            reasoning = reasoning_part
-        elif "MaliciousScore:" in text_response:
-            try:
-                malicious_score = int(text_response.replace("MaliciousScore:", "").strip())
+                malicious_score = int(score_match.group(1))
             except ValueError:
                 pass
-            reasoning = "Could not parse reasoning."
-        elif "Reasoning:" in text_response:
-            reasoning = text_response.replace("Reasoning:", "").strip()
+        
+        if reasoning_match:
+            reasoning = reasoning_match.group(1).strip()
         else:
-            reasoning = text_response # Fallback if expected format not found
+            # If no explicit reasoning found, use the entire response minus the score
+            reasoning = re.sub(r'MaliciousScore:\s*\d+\s*', '', text_response).strip()
+            if not reasoning:
+                reasoning = "Could not parse reasoning."
 
         return {"MaliciousScore": malicious_score, "Reasoning": reasoning}
-        return result
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=400, detail=f"Error accessing the URL: {e}")
     except Exception as e:

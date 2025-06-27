@@ -131,25 +131,21 @@ curl -X POST "http://127.0.0.1:8000/api/v1/check-malicious-text" \
   -F "file=@/path/to/your/image_with_text.png;type=image/png"
 ```
 
-### 4. URL Malicious Intent Check
+The `/api/v1/check-url-malicious-intent` endpoint allows you to check the malicious intent of content found at a given URL. It scrapes text from the URL and uses the Gemini model for analysis. If no readable text is found on the page, the AI will assess based solely on the URL name.
 
-Scrapes text from a given URL and assesses its malicious intent. If no readable text is found on the page, the AI will assess based solely on the URL itself.
+- **Method**: `POST`
+- **URL**: `/api/v1/check-url-malicious-intent`
+- **Request Body**: `{"url": "<your_url_here>"}`
+- **Response**: `{"MaliciousScore": <score>, "Reasoning": "<reasoning_text>"}`
 
-*   **Endpoint**: `/api/v1/check-url-malicious-intent`
-*   **Method**: `POST`
-*   **Content-Type**: `application/json`
-*   **JSON Body**: 
-    *   `url` (required): The URL to scrape and analyze.
-*   **Response**: `application/json` with `{"MaliciousScore": ..., "Reasoning": "..."}`
+  The parsing logic for the AI's response has been improved to ensure accurate extraction of both the `MaliciousScore` and `Reasoning`.
 
-**Example using `curl`:**
-
-```bash
-curl -X POST "http://127.0.0.1:8000/api/v1/check-url-malicious-intent" \
-  -H "accept: application/json" \
-  -H "Content-Type: application/json" \
-  -d '{"url": "http://example.com/suspicious-page"}'
-```
+  **Example `curl` command**:
+  ```bash
+  curl -X POST "http://localhost:8000/api/v1/check-url-malicious-intent" \
+       -H "Content-Type: application/json" \
+       -d '{"url": "https://www.example.com"}'
+  ```
 
 ### Root Endpoint
 
