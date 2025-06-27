@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from typing import Optional, Union
+from pydantic import BaseModel
 import io
 from PIL import Image
 import requests
@@ -118,9 +119,13 @@ async def verify_authenticity(file: UploadFile = File(...)):
     resultresult = await generate_gemini_content(prompt=prompt, image_data=image_data)
     return result
 
+class URLInput(BaseModel):
+    url: str
+
 @app.post("/api/v1/check-url-malicious-intent")
-async def check_url_malicious_intent(url: str):
+async def check_url_malicious_intent(url_input: URLInput):
     try:
+        url = url_input.url
         response = requests.get(url)
         response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -130,41 +135,25 @@ async def check_url_malicious_intent(url: str):
         text_content = soup.get_text(separator=' ', strip=True)
 
         if not text_content:
-            prompt_text = f"Analyze the URL name '{url}' for malicious intent. Since no readable text was found on the page, base your assessment solely on the URL name (domain, path segments). Determine if it suggests phishing attempts, scamming, or other harmful content. Provide a concise MaliciousScore (a number from 1-100) and explain your Reasoning. Output your response in a clear, easy-to-read format, starting with 'MaliciousScore: ' then 'Reasoning: '."
+            prompt_text = (
+                f"Analyze the URL name '{url}' for malicious intent. Since no readable text was found on the page, "
+                "base your assessment solely on the URL name (domain, path segments). "
+                "Determine if it suggests phishing attempts, scamming, or other harmful content. "
+                "Provide a concise assessment and explain your reasoning. "
+                "Output your response in a clear, easy-to-read format, starting with 'Assessment: ' (either 'Malicious' or 'Not Malicious'), then 'Reasoning: ', and finally 'ConfidenceScore: ' (a number from 1-100)."
+            )
             gemini_response = await generate_gemini_content(prompt=prompt_text, text_input=url)
         else:
             prompt_text = (
                 f"Analyze the provided content scraped from the URL '{url}' for malicious intent. "
                 "Determine if the website contains phishing attempts, scamming language, hate speech, "
-                "or any other harmful content. Provide a MaliciousScore (a number from 1-100) and explain your Reasoning. "
-                "Output your response in a clear, easy-to-read format, starting with 'MaliciousScore: ' then 'Reasoning: '."
+                "or any other harmful content. "
+                "Provide a concise assessment and explain your reasoning. "
+                "Output your response in a clear, easy-to-read format, starting with 'Assessment: ' (either 'Malicious' or 'Not Malicious'), then 'Reasoning: ', and finally 'ConfidenceScore: ' (a number from 1-100)."
             )
             gemini_response = await generate_gemini_content(prompt=prompt_text, text_input=text_content)
 
-        # Parse the Gemini response for MaliciousScore and Reasoning
-        text_response = gemini_response['Reasoning'] # The full text response from Gemini
-        malicious_score = 0
-        reasoning = "N/A"
-
-        # First try to find both score and reasoning in standard format
-        score_match = re.search(r'MaliciousScore:\s*(\d+)', text_response)
-        reasoning_match = re.search(r'Reasoning:\s*(.*)', text_response, re.DOTALL)
-        
-        if score_match:
-            try:
-                malicious_score = int(score_match.group(1))
-            except ValueError:
-                pass
-        
-        if reasoning_match:
-            reasoning = reasoning_match.group(1).strip()
-        else:
-            # If no explicit reasoning found, use the entire response minus the score
-            reasoning = re.sub(r'MaliciousScore:\s*\d+\s*', '', text_response).strip()
-            if not reasoning:
-                reasoning = "Could not parse reasoning."
-
-        return {"MaliciousScore": malicious_score, "Reasoning": reasoning}
+        return gemini_response
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=400, detail=f"Error accessing the URL: {e}")
     except Exception as e:
