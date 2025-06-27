@@ -6,6 +6,97 @@ This API allows you to analyze product images to determine if a product/listing 
 
 *   **Scam Check**: Determine if a product can genuinely do what it claims.
 *   **Authenticity Verification**: Verify if a product is a real/official version or a fake/unofficial one.
+*   **URL Malicious Intent Check**: Analyze a given URL for phishing attempts, scamming language, hate speech, or other harmful content.
+
+## Usage
+
+### Check Malicious Text/Image
+
+To check text or an image for malicious intent, send a `POST` request to `/api/v1/check-malicious-text`.
+
+**Request Body Options:**
+
+*   **Text only:**
+
+    ```bash
+    curl -X POST -H "Content-Type: application/json" -d '{"text": "Your text to analyze"}' http://localhost:8000/api/v1/check-malicious-text
+    ```
+
+*   **Image only:**
+
+    ```bash
+    curl -X POST -F "file=@/path/to/your/image.jpg" http://localhost:8000/api/v1/check-malicious-text
+    ```
+
+*   **Text and Image:**
+
+    ```bash
+    curl -X POST -F "text=Your text to analyze" -F "file=@/path/to/your/image.jpg" http://localhost:8000/api/v1/check-malicious-text
+    ```
+
+**Response Format:**
+
+```json
+{
+  "Assessment": "Malicious" || "Not Malicious",
+  "Reasoning": "Explanation of the assessment.",
+  "ConfidenceScore": 1-100
+}
+```
+
+### Check Scam (Image)
+
+To check if a product image appears to be a scam, send a `POST` request to `/api/v1/check-scam` with the image file.
+
+```bash
+curl -X POST -F "file=@/path/to/your/image.jpg" http://localhost:8000/api/v1/check-scam
+```
+
+**Response Format:**
+
+```json
+{
+  "Assessment": "Scam" || "Real",
+  "Reasoning": "Explanation of the assessment.",
+  "ConfidenceScore": 1-100
+}
+```
+
+### Verify Authenticity (Image)
+
+To verify the authenticity of a product image, send a `POST` request to `/api/v1/verify-authenticity` with the image file.
+
+```bash
+curl -X POST -F "file=@/path/to/your/image.jpg" http://localhost:8000/api/v1/verify-authenticity
+```
+
+**Response Format:**
+
+```json
+{
+  "Assessment": "Fake" || "Genuine",
+  "Reasoning": "Explanation of the assessment.",
+  "ConfidenceScore": 1-100
+}
+```
+
+### Check URL Malicious Intent
+
+To check a URL for malicious intent, send a `POST` request to `/api/v1/check-url-malicious-intent` with the URL as a form parameter.
+
+```bash
+curl -X POST -F "url=https://example.com" http://localhost:8000/api/v1/check-url-malicious-intent
+```
+
+**Response Format:**
+
+```json
+{
+  "Assessment": "Malicious" || "Not Malicious",
+  "Reasoning": "Explanation of why the URL is considered malicious or not.",
+  "ConfidenceScore": 1-100
+}
+```
 
 ## Setup
 

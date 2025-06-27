@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from typing import Optional, Union
-from pydantic import BaseModel
+
 import io
 from PIL import Image
 import requests
@@ -119,13 +119,10 @@ async def verify_authenticity(file: UploadFile = File(...)):
     resultresult = await generate_gemini_content(prompt=prompt, image_data=image_data)
     return result
 
-class URLInput(BaseModel):
-    url: str
-
 @app.post("/api/v1/check-url-malicious-intent")
-async def check_url_malicious_intent(url_input: URLInput):
+async def check_url_malicious_intent(url: str):
     try:
-        url = url_input.url
+
         response = requests.get(url)
         response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
         soup = BeautifulSoup(response.text, 'html.parser')
