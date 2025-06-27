@@ -129,15 +129,16 @@ async def check_url_malicious_intent(url: str):
         text_content = soup.get_text(separator=' ', strip=True)
 
         if not text_content:
-            raise HTTPException(status_code=400, detail="No readable text found on the provided URL.")
-
-        prompt = (
-            "Analyze the provided text content scraped from a URL for malicious intent. "
-            "Determine if it contains phishing attempts, scamming language, hate speech, "
-            "or any other harmful content. Provide a concise assessment and explain your reasoning. "
-            "Output your response in a clear, easy-to-read format, starting with 'Assessment: ' (either 'Malicious' or 'Not Malicious'), then 'Reasoning: ', and finally 'ConfidenceScore: ' (a number from 1-100)."
-        )
-        result = await generate_gemini_content(prompt=prompt, text_input=text_content)
+            prompt_text = f"Analyze the URL '{url}' for malicious intent. Since no readable text was found on the page, base your assessment solely on the URL itself. Determine if it suggests phishing attempts, scamming, or other harmful content. Provide a concise assessment and explain your reasoning. Output your response in a clear, easy-to-read format, starting with 'Assessment: ' (either 'Malicious' or 'Not Malicious'), then 'Reasoning: ', and finally 'ConfidenceScore: ' (a number from 1-100)."
+            result = await generate_gemini_content(prompt=prompt_text, text_input=url)
+        else:
+            prompt_text = (
+                f"Analyze the provided text content scraped from the URL '{url}' for malicious intent. "
+                "Determine if it contains phishing attempts, scamming language, hate speech, "
+                "or any other harmful content. Provide a concise assessment and explain your reasoning. "
+                "Output your response in a clear, easy-to-read format, starting with 'Assessment: ' (either 'Malicious' or 'Not Malicious'), then 'Reasoning: ', and finally 'ConfidenceScore: ' (a number from 1-100)."
+            )
+            result = await generate_gemini_content(prompt=prompt_text, text_input=text_content)
         return result
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=400, detail=f"Error accessing the URL: {e}")

@@ -133,7 +133,7 @@ curl -X POST "http://127.0.0.1:8000/api/v1/check-malicious-text" \
 
 ### 4. URL Malicious Intent Check
 
-Scrapes text from a given URL and assesses its malicious intent.
+Scrapes text from a given URL and assesses its malicious intent. If no readable text is found on the page, the AI will assess based solely on the URL itself.
 
 *   **Endpoint**: `/api/v1/check-url-malicious-intent`
 *   **Method**: `POST`
