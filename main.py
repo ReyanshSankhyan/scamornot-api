@@ -134,9 +134,9 @@ async def check_url_malicious_intent(url: str):
             gemini_response = await generate_gemini_content(prompt=prompt_text, text_input=url)
         else:
             prompt_text = (
-                f"Analyze the provided text content scraped from the URL '{url}' for malicious intent. "
-                "Determine if it contains phishing attempts, scamming language, hate speech, "
-                "or any other harmful content. Provide a concise MaliciousScore (a number from 1-100) and explain your Reasoning. "
+                f"Analyze the provided content scraped from the URL '{url}' for malicious intent. "
+                "Determine if the website contains phishing attempts, scamming language, hate speech, "
+                "or any other harmful content. Provide a MaliciousScore (a number from 1-100) and explain your Reasoning. "
                 "Output your response in a clear, easy-to-read format, starting with 'MaliciousScore: ' then 'Reasoning: '."
             )
             gemini_response = await generate_gemini_content(prompt=prompt_text, text_input=text_content)
