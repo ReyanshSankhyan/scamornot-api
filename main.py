@@ -2,9 +2,11 @@ import os
 from dotenv import load_dotenv
 import google.generativeai as genai
 from fastapi import FastAPI, File, UploadFile, HTTPException
-from typing import Optional
+from typing import Optional, Union
 import io
 from PIL import Image
+import requests
+from bs4 import BeautifulSoup
 
 # Load environment variables from .env file
 load_dotenv()
@@ -19,12 +21,17 @@ genai.configure(api_key=GEMINI_API_KEY)
 app = FastAPI()
 
 # Function to generate content using Gemini Vision Pro
-async def generate_gemini_content(image_data: bytes, prompt: str):
+async def generate_gemini_content(prompt: str, image_data: Optional[bytes] = None, text_input: Optional[str] = None):
     try:
         # Open the image using Pillow
-        img = Image.open(io.BytesIO(image_data))
         model = genai.GenerativeModel('gemini-1.5-flash') # Updated model name
-        response = model.generate_content([prompt, img])
+        contents = [prompt]
+        if image_data:
+            img = Image.open(io.BytesIO(image_data))
+            contents.append(img)
+        if text_input:
+            contents.append(text_input)
+        response = model.generate_content(contents)
         # Assuming the response text is in the format 'Assessment: ...\nReasoning: ...'
         text_response = response.text
         assessment = "N/A"
@@ -56,8 +63,28 @@ async def generate_gemini_content(image_data: bytes, prompt: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating content from Gemini: {e}")
 
+@app.post("/api/v1/check-malicious-text")
+async def check_malicious_text(text: Optional[str] = None, file: Optional[UploadFile] = File(None)):
+    if not text and not file:
+        raise HTTPException(status_code=400, detail="Either 'text' or 'file' must be provided.")
+
+    image_data = None
+    if file:
+        if not file.content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="Invalid file type. Please upload an image.")
+        image_data = await file.read()
+
+    prompt = (
+        "Analyze the provided text or text within the image for malicious intent. "
+        "Determine if it contains phishing attempts, scamming language, hate speech, "
+        "or any other harmful content. Provide a concise assessment and explain your reasoning. "
+        "Output your response in a clear, easy-to-read format, starting with 'Assessment: ' (either 'Malicious' or 'Not Malicious'), then 'Reasoning: ', and finally 'ConfidenceScore: ' (a number from 1-100)."
+    )
+    result = await generate_gemini_content(prompt=prompt, image_data=image_data, text_input=text)
+    return result
+
 @app.post("/api/v1/check-scam")
-async def check_scam(file: UploadFile = File(...)):
+async def check_scam(file: UploadFile = File(...)): 
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload an image.")
 
@@ -87,8 +114,35 @@ async def verify_authenticity(file: UploadFile = File(...)):
         "Focus on details that indicate authenticity or lack thereof, such as logos, quality, and design. "
         "Output your response in a clear, easy-to-read format, starting with 'Assessment: ' (either 'Fake' or 'Genuine'), then 'Reasoning: ', and finally 'ConfidenceScore: ' (a number from 1-100)."
     )
-    result = await generate_gemini_content(image_data, prompt)
+    resultresult = await generate_gemini_content(prompt=prompt, image_data=image_data)
     return result
+
+@app.post("/api/v1/check-url-malicious-intent")
+async def check_url_malicious_intent(url: str):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        # Extract all text from the body, excluding script and style tags
+        for script_or_style in soup(['script', 'style']):
+            script_or_style.extract()
+        text_content = soup.get_text(separator=' ', strip=True)
+
+        if not text_content:
+            raise HTTPException(status_code=400, detail="No readable text found on the provided URL.")
+
+        prompt = (
+            "Analyze the provided text content scraped from a URL for malicious intent. "
+            "Determine if it contains phishing attempts, scamming language, hate speech, "
+            "or any other harmful content. Provide a concise assessment and explain your reasoning. "
+            "Output your response in a clear, easy-to-read format, starting with 'Assessment: ' (either 'Malicious' or 'Not Malicious'), then 'Reasoning: ', and finally 'ConfidenceScore: ' (a number from 1-100)."
+        )
+        result = await generate_gemini_content(prompt=prompt, text_input=text_content)
+        return result
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=400, detail=f"Error accessing the URL: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
 
 @app.get("/")
 async def read_root():
