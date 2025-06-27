@@ -23,7 +23,7 @@ async def generate_gemini_content(image_data: bytes, prompt: str):
     try:
         # Open the image using Pillow
         img = Image.open(io.BytesIO(image_data))
-        model = genai.GenerativeModel('gemini-pro-vision')
+        model = genai.GenerativeModel('gemini-1.5-flash') # Updated model name
         response = model.generate_content([prompt, img])
         # Assuming the response text is in the format 'Assessment: ...\nReasoning: ...'
         text_response = response.text
