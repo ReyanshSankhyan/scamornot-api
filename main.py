@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from typing import Optional, Union
 
 import io
@@ -120,7 +120,7 @@ async def verify_authenticity(file: UploadFile = File(...)):
     return result
 
 @app.post("/api/v1/check-url-malicious-intent")
-async def check_url_malicious_intent(url: str):
+async def check_url_malicious_intent(url: str = Form(...)): 
     try:
 
         response = requests.get(url)
