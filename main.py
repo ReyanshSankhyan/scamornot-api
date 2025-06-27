@@ -29,11 +29,18 @@ async def generate_gemini_content(image_data: bytes, prompt: str):
         text_response = response.text
         assessment = "N/A"
         reasoning = "N/A"
+        confidence_score = 0
 
-        if "Assessment:" in text_response and "Reasoning:" in text_response:
+        if "Assessment:" in text_response and "Reasoning:" in text_response and "ConfidenceScore:" in text_response:
             parts = text_response.split("Reasoning:", 1)
             assessment_part = parts[0].replace("Assessment:", "").strip()
-            reasoning_part = parts[1].strip()
+            remaining_parts = parts[1].split("ConfidenceScore:", 1)
+            reasoning_part = remaining_parts[0].strip()
+            try:
+                confidence_score_part = int(remaining_parts[1].strip())
+                confidence_score = confidence_score_part
+            except ValueError:
+                pass # Keep default 0 if parsing fails
             assessment = assessment_part
             reasoning = reasoning_part
         elif "Assessment:" in text_response:
@@ -45,7 +52,7 @@ async def generate_gemini_content(image_data: bytes, prompt: str):
             assessment = "Could not parse assessment."
             reasoning = text_response
 
-        return {"Assessment": assessment, "Reasoning": reasoning}
+        return {"Assessment": assessment, "Reasoning": reasoning, "ConfidenceScore": confidence_score}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating content from Gemini: {e}")
 
@@ -61,7 +68,7 @@ async def check_scam(file: UploadFile = File(...)):
         "determine if the product appears to be a scam or if it can genuinely do what it claims. "
         "Provide a concise assessment and explain your reasoning. "
         "Focus on whether the product's claims seem plausible or exaggerated/deceptive. "
-        "Output your response in a clear, easy-to-read format, starting with 'Assessment: ' and then 'Reasoning: '."
+        "Output your response in a clear, easy-to-read format, starting with 'Assessment: ' (either 'Scam' or 'Real'), then 'Reasoning: ', and finally 'ConfidenceScore: ' (a number from 1-100)."
     )
     result = await generate_gemini_content(image_data, prompt)
     return result
@@ -78,7 +85,7 @@ async def verify_authenticity(file: UploadFile = File(...)):
         "determine if this product appears to be a genuine/official version or a fake/unofficial one. "
         "Provide a concise assessment and explain your reasoning. "
         "Focus on details that indicate authenticity or lack thereof, such as logos, quality, and design. "
-        "Output your response in a clear, easy-to-read format, starting with 'Assessment: ' and then 'Reasoning: '."
+        "Output your response in a clear, easy-to-read format, starting with 'Assessment: ' (either 'Fake' or 'Genuine'), then 'Reasoning: ', and finally 'ConfidenceScore: ' (a number from 1-100)."
     )
     result = await generate_gemini_content(image_data, prompt)
     return result
