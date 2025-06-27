@@ -90,7 +90,7 @@ Verifies if a product is a genuine/official version or a fake/unofficial one.
 *   **Method**: `POST`
 *   **Content-Type**: `multipart/form-data`
 *   **Form Field**: `file` (your image file)
-*   **Response**: `application/json` with `{"Assessment": "...", "Reasoning": "...", "ConfidenceScore": ...}`
+*   **Response**: `application/json` with `{"MaliciousScore": ..., "Reasoning": "..."}`
 
 **Example using `curl`:**
 
@@ -111,7 +111,7 @@ Determines if a given text or text within an image has malicious intent.
 *   **Form Fields/JSON Body**: 
     *   `text` (optional): A string of text to analyze.
     *   `file` (optional): An image file containing text to analyze.
-*   **Response**: `application/json` with `{"Assessment": "...", "Reasoning": "...", "ConfidenceScore": ...}`
+*   **Response**: `application/json` with `{"MaliciousScore": ..., "Reasoning": "..."}`
 
 **Example using `curl` with text input:**
 
@@ -140,7 +140,7 @@ Scrapes text from a given URL and assesses its malicious intent. If no readable 
 *   **Content-Type**: `application/json`
 *   **JSON Body**: 
     *   `url` (required): The URL to scrape and analyze.
-*   **Response**: `application/json` with `{"Assessment": "...", "Reasoning": "...", "ConfidenceScore": ...}`
+*   **Response**: `application/json` with `{"MaliciousScore": ..., "Reasoning": "..."}`
 
 **Example using `curl`:**
 

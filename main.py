@@ -129,16 +129,43 @@ async def check_url_malicious_intent(url: str):
         text_content = soup.get_text(separator=' ', strip=True)
 
         if not text_content:
-            prompt_text = f"Analyze the URL '{url}' for malicious intent. Since no readable text was found on the page, base your assessment solely on the URL itself. Determine if it suggests phishing attempts, scamming, or other harmful content. Provide a concise assessment and explain your reasoning. Output your response in a clear, easy-to-read format, starting with 'Assessment: ' (either 'Malicious' or 'Not Malicious'), then 'Reasoning: ', and finally 'ConfidenceScore: ' (a number from 1-100)."
-            result = await generate_gemini_content(prompt=prompt_text, text_input=url)
+            prompt_text = f"Analyze the URL name '{url}' for malicious intent. Since no readable text was found on the page, base your assessment solely on the URL name (domain, path segments). Determine if it suggests phishing attempts, scamming, or other harmful content. Provide a concise MaliciousScore (a number from 1-100) and explain your Reasoning. Output your response in a clear, easy-to-read format, starting with 'MaliciousScore: ' then 'Reasoning: '."
+            gemini_response = await generate_gemini_content(prompt=prompt_text, text_input=url)
         else:
             prompt_text = (
                 f"Analyze the provided text content scraped from the URL '{url}' for malicious intent. "
                 "Determine if it contains phishing attempts, scamming language, hate speech, "
-                "or any other harmful content. Provide a concise assessment and explain your reasoning. "
-                "Output your response in a clear, easy-to-read format, starting with 'Assessment: ' (either 'Malicious' or 'Not Malicious'), then 'Reasoning: ', and finally 'ConfidenceScore: ' (a number from 1-100)."
+                "or any other harmful content. Provide a concise MaliciousScore (a number from 1-100) and explain your Reasoning. "
+                "Output your response in a clear, easy-to-read format, starting with 'MaliciousScore: ' then 'Reasoning: '."
             )
-            result = await generate_gemini_content(prompt=prompt_text, text_input=text_content)
+            gemini_response = await generate_gemini_content(prompt=prompt_text, text_input=text_content)
+
+        # Parse the Gemini response for MaliciousScore and Reasoning
+        text_response = gemini_response['Reasoning'] # The full text response from Gemini
+        malicious_score = 0
+        reasoning = "N/A"
+
+        if "MaliciousScore:" in text_response and "Reasoning:" in text_response:
+            parts = text_response.split("Reasoning:", 1)
+            malicious_score_part = parts[0].replace("MaliciousScore:", "").strip()
+            reasoning_part = parts[1].strip()
+            try:
+                malicious_score = int(malicious_score_part)
+            except ValueError:
+                pass # Keep default 0 if parsing fails
+            reasoning = reasoning_part
+        elif "MaliciousScore:" in text_response:
+            try:
+                malicious_score = int(text_response.replace("MaliciousScore:", "").strip())
+            except ValueError:
+                pass
+            reasoning = "Could not parse reasoning."
+        elif "Reasoning:" in text_response:
+            reasoning = text_response.replace("Reasoning:", "").strip()
+        else:
+            reasoning = text_response # Fallback if expected format not found
+
+        return {"MaliciousScore": malicious_score, "Reasoning": reasoning}
         return result
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=400, detail=f"Error accessing the URL: {e}")
