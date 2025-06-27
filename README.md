@@ -90,7 +90,7 @@ Verifies if a product is a genuine/official version or a fake/unofficial one.
 *   **Method**: `POST`
 *   **Content-Type**: `multipart/form-data`
 *   **Form Field**: `file` (your image file)
-*   **Response**: `application/json` with `{"Assessment": "...", "Reasoning": "..."}`
+*   **Response**: `application/json` with `{"Assessment": "...", "Reasoning": "...", "ConfidenceScore": ...}`
 
 **Example using `curl`:**
 
@@ -99,6 +99,56 @@ curl -X POST "http://127.0.0.1:8000/api/v1/verify-authenticity" \
   -H "accept: application/json" \
   -H "Content-Type: multipart/form-data" \
   -F "file=@/path/to/your/image.jpg;type=image/jpeg"
+```
+
+### 3. Malicious Text Check
+
+Determines if a given text or text within an image has malicious intent.
+
+*   **Endpoint**: `/api/v1/check-malicious-text`
+*   **Method**: `POST`
+*   **Content-Type**: `multipart/form-data` or `application/json`
+*   **Form Fields/JSON Body**: 
+    *   `text` (optional): A string of text to analyze.
+    *   `file` (optional): An image file containing text to analyze.
+*   **Response**: `application/json` with `{"Assessment": "...", "Reasoning": "...", "ConfidenceScore": ...}`
+
+**Example using `curl` with text input:**
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/check-malicious-text" \
+  -H "accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "This is a suspicious message."}'
+```
+
+**Example using `curl` with image input:**
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/check-malicious-text" \
+  -H "accept: application/json" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@/path/to/your/image_with_text.png;type=image/png"
+```
+
+### 4. URL Malicious Intent Check
+
+Scrapes text from a given URL and assesses its malicious intent.
+
+*   **Endpoint**: `/api/v1/check-url-malicious-intent`
+*   **Method**: `POST`
+*   **Content-Type**: `application/json`
+*   **JSON Body**: 
+    *   `url` (required): The URL to scrape and analyze.
+*   **Response**: `application/json` with `{"Assessment": "...", "Reasoning": "...", "ConfidenceScore": ...}`
+
+**Example using `curl`:**
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/check-url-malicious-intent" \
+  -H "accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "http://example.com/suspicious-page"}'
 ```
 
 ### Root Endpoint
