@@ -99,7 +99,7 @@ async def check_scam(file: UploadFile = File(...)):
         "Focus on whether the product's claims seem plausible or exaggerated/deceptive. "
         "Output your response in a clear, easy-to-read format, starting with 'Assessment: ' (either 'Scam' or 'Real'), then 'Reasoning: ', and finally 'ConfidenceScore: ' (a number from 1-100)."
     )
-    result = await generate_gemini_content(image_data, prompt)
+    result = await generate_gemini_content(prompt=prompt, image_data=image_data)
     return result
 
 @app.post("/api/v1/verify-authenticity")
