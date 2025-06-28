@@ -116,7 +116,7 @@ async def verify_authenticity(file: UploadFile = File(...)):
         "Focus on details that indicate authenticity or lack thereof, such as logos, quality, and design. "
         "Output your response in a clear, easy-to-read format, starting with 'Assessment: ' (either 'Fake' or 'Genuine'), then 'Reasoning: ', and finally 'ConfidenceScore: ' (a number from 1-100)."
     )
-    resultresult = await generate_gemini_content(prompt=prompt, image_data=image_data)
+    result = await generate_gemini_content(prompt=prompt, image_data=image_data)
     return result
 
 @app.post("/api/v1/check-url-malicious-intent")
